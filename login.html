@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>HomeFlix - Admin Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #121828, #05070f);
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  max-width: 1400px;
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* ===== LOGIN CARD ===== */
+.login-card {
+  background: linear-gradient(145deg, #1b2236, #121828);
+  padding: 40px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  border: 2px solid #e50914;
+}
+
+.login-card h1 {
+  color: #e50914;
+  margin: 0 0 10px 0;
+  font-size: 36px;
+  text-align: center;
+}
+
+.login-card h2 {
+  text-align: center;
+  color: #aaa;
+  font-size: 18px;
+  margin: 0 0 30px 0;
+  font-weight: normal;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  color: #aaa;
+  border: 2px solid #2a2f45;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: .3s;
+}
+
+.tab-btn.active {
+  background: #e50914;
+  color: #fff;
+  border-color: #e50914;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ccc;
+  font-weight: bold;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: 2px solid #2a2f45;
+  background: #0f1419;
+  color: #fff;
+  font-size: 16px;
+  transition: .3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #e50914;
+}
+
+.btn-submit {
+  width: 100%;
+  background: #e50914;
+  color: #fff;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;
+  transition: .3s;
+  margin-top: 10px;
+}
+
+.btn-submit:hover {
+  background: #b20710;
+  transform: translateY(-2px);
+}
+
+.btn-logout {
+  width: 100%;
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 18px;
+  transition: .3s;
+  margin-top: 20px;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+}
+
+.btn-back {
+  width: 100%;
+  background: #6b7280;
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.message.error {
+  background: rgba(239,68,68,.2);
+  border: 2px solid #ef4444;
+  color: #fca5a5;
+}
+
+.message.success {
+  background: rgba(34,197,94,.2);
+  border: 2px solid #22c55e;
+  color: #86efac;
+}
+
+.logged-in-section {
+  display: none;
+  text-align: center;
+}
+
+.logged-in-section.active {
+  display: block;
+}
+
+.user-info {
+  background: #0f1419;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.user-info p {
+  margin: 5px 0;
+  color: #22c55e;
+  font-size: 16px;
+}
+
+/* ===== ADMIN PANEL ===== */
+.admin-panel {
+  flex: 1;
+  background: linear-gradient(145deg, #1b2236, #121828);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  display: none;
+}
+
+.admin-panel.active {
+  display: block;
+}
+
+.admin-panel h2 {
+  color: #e50914;
+  margin: 0 0 30px 0;
+  text-align: center;
+  font-size: 32px;
+}
+
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #0f1419;
+  border-radius: 12px;
+}
+
+.admin-form input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 2px solid #2a2f45;
+  background: #121828;
+  color: #fff;
+  font-size: 14px;
+}
+
+.admin-form input:focus {
+  outline: none;
+  border-color: #22c55e;
+}
+
+.admin-form button {
+  background: #22c55e;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: .3s;
+}
+
+.admin-form button:hover {
+  background: #16a34a;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0f1419;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-table th {
+  background: #e50914;
+  color: #fff;
+  padding: 15px;
+  text-align: left;
+  font-weight: bold;
+}
+
+.admin-table td {
+  border-bottom: 1px solid #2a2f45;
+  padding: 15px;
+  color: #ccc;
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  color: #fff;
+  font-weight: bold;
+  margin-right: 5px;
+  transition: .3s;
+}
+
+.admin-table button:hover {
+  transform: scale(1.05);
+}
+
+.btn-toggle {
+  background: #3b82f6;
+}
+
+.btn-delete {
+  background: #ef4444;
+}
+
+@media (max-width: 1200px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .login-card {
+    max-width: 600px;
+  }
+  
+  .admin-panel {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <!-- ===== LOGIN CARD ===== -->
+  <div class="login-card">
+    <h1>🎬 HomeFlix</h1>
+    <h2>Panel de Administración</h2>
+
+    <div id="messageBox"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('login')">Iniciar Sesión</button>
+      <button class="tab-btn" onclick="showTab('register')">Registrarse</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginTab" class="tab-content active">
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>📧 Correo Electrónico</label>
+          <input type="email" id="loginEmail" required placeholder="admin@homeflix.com">
+        </div>
+        <div class="form-group">
+          <label>🔒 Contraseña</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-submit">🔓 Iniciar Sesión</button>
+        <button type="button" class="btn-back" onclick="goToHome()">← Volver al Inicio</button>
+      </form>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerTab" class="tab-content">
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label>📧 Correo Electrónico</label>
+          <input type="email" id="registerEmail" required placeholder="admin@homeflix.com">
+        </div>
+        <div class="form-group">
+          <label>🔒 Contraseña</label>
+          <input type="password" id="registerPassword" required placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="form-group">
+          <label>🔒 Confirmar Contraseña</label>
+          <input type="password" id="registerPasswordConfirm" required placeholder="Repite tu contraseña">
+        </div>
+        <button type="submit" class="btn-submit">✅ Registrarse</button>
+        <button type="button" class="btn-back" onclick="goToHome()">← Volver al Inicio</button>
+      </form>
+    </div>
+
+    <!-- Logged In Section -->
+    <div id="loggedInSection" class="logged-in-section">
+      <div class="user-info">
+        <p>✅ <strong>Sesión Activa</strong></p>
+        <p id="userEmail"></p>
+      </div>
+      <button class="btn-logout" onclick="handleLogout()">🚪 Cerrar Sesión</button>
+      <button type="button" class="btn-back" onclick="goToHome()">← Volver al Inicio</button>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN PANEL ===== -->
+  <div id="adminPanel" class="admin-panel">
+    <h2>⚙️ Gestión de Productos</h2>
+
+    <div class="admin-form">
+      <input id="pName" placeholder="Nombre del producto" required>
+      <input id="pDesc" placeholder="Descripción">
+      <input id="pPrice" type="number" placeholder="Precio (COP)" required>
+      <input id="pLogo" placeholder="URL del logo">
+      <button onclick="addProduct()">➕ Agregar Producto</button>
+    </div>
+
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="adminTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== SUPABASE ===== */
+const supabaseClient = supabase.createClient(
+  "https://ysynzhjhyklnlxrvrlqi.supabase.co",
+  "sb_publishable_d35p-YdLArGM_jbrgUIesw_yUplQJpd"
+);
+
+let products = [];
+
+/* ===== TABS ===== */
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  
+  if (tab === 'login') {
+    document.querySelector('.tab-btn:first-child').classList.add('active');
+    document.getElementById('loginTab').classList.add('active');
+  } else {
+    document.querySelector('.tab-btn:last-child').classList.add('active');
+    document.getElementById('registerTab').classList.add('active');
+  }
+  clearMessage();
+}
+
+/* ===== MESSAGES ===== */
+function showMessage(text, type = 'error') {
+  const box = document.getElementById('messageBox');
+  box.innerHTML = `<div class="message ${type}">${text}</div>`;
+  setTimeout(() => clearMessage(), 5000);
+}
+
+function clearMessage() {
+  document.getElementById('messageBox').innerHTML = '';
+}
+
+/* ===== AUTH ===== */
+async function checkAuth() {
+  const { data } = await supabaseClient.auth.getSession();
+  
+  if (data.session) {
+    // Usuario autenticado
+    document.getElementById('loggedInSection').classList.add('active');
+    document.getElementById('loginTab').classList.remove('active');
+    document.getElementById('registerTab').classList.remove('active');
+    document.querySelectorAll('.tabs').forEach(el => el.style.display = 'none');
+    document.getElementById('userEmail').textContent = data.session.user.email;
+    document.getElementById('adminPanel').classList.add('active');
+    loadProducts();
+  }
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  clearMessage();
+  
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+  
+  if (error) {
+    showMessage('❌ ' + error.message, 'error');
+  } else {
+    showMessage('✅ Inicio de sesión exitoso', 'success');
+    setTimeout(() => {
+      location.reload();
+    }, 1000);
+  }
+}
+
+async function handleRegister(e) {
+  e.preventDefault();
+  clearMessage();
+  
+  const email = document.getElementById('registerEmail').value;
+  const password = document.getElementById('registerPassword').value;
+  const confirmPassword = document.getElementById('registerPasswordConfirm').value;
+  
+  if (password !== confirmPassword) {
+    showMessage('❌ Las contraseñas no coinciden', 'error');
+    return;
+  }
+  
+  if (password.length < 6) {
+    showMessage('❌ La contraseña debe tener al menos 6 caracteres', 'error');
+    return;
+  }
+  
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+  
+  if (error) {
+    showMessage('❌ ' + error.message, 'error');
+  } else {
+    showMessage('✅ Registro exitoso. Revisa tu email para confirmar.', 'success');
+    setTimeout(() => {
+      showTab('login');
+    }, 3000);
+  }
+}
+
+async function handleLogout() {
+  await supabaseClient.auth.signOut();
+  showMessage('✅ Sesión cerrada correctamente', 'success');
+  setTimeout(() => {
+    location.reload();
+  }, 1000);
+}
+
+function goToHome() {
+  window.location.href = 'index.html';
+}
+
+/* ===== PRODUCTS ===== */
+async function loadProducts() {
+  const { data } = await supabaseClient.from("productos").select("*");
+  products = data || [];
+  renderAdmin();
+}
+
+function renderAdmin() {
+  const table = document.getElementById('adminTable');
+  table.innerHTML = "";
+  
+  if (products.length === 0) {
+    table.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">No hay productos registrados</td></tr>';
+    return;
+  }
+  
+  products.forEach(p => {
+    table.innerHTML += `
+      <tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.description || '-'}</td>
+        <td>$${p.price?.toLocaleString("es-CO") || 0}</td>
+        <td>${p.activate ? '✅ Activo' : '❌ Inactivo'}</td>
+        <td>
+          <button class="btn-toggle" onclick="toggleProduct('${p.id}', ${!p.activate})">
+            ${p.activate ? '🔒 Desactivar' : '🔓 Activar'}
+          </button>
+          <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑 Eliminar</button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function toggleProduct(id, status) {
+  await supabaseClient.from("productos").update({ activate: status }).eq("id", id);
+  showMessage(`✅ Producto ${status ? 'activado' : 'desactivado'}`, 'success');
+  loadProducts();
+}
+
+async function deleteProduct(id) {
+  if (!confirm("¿Estás seguro de eliminar este producto?")) return;
+  
+  const { error } = await supabaseClient.from("productos").delete().eq("id", id);
+  
+  if (error) {
+    showMessage('❌ Error al eliminar el producto', 'error');
+  } else {
+    showMessage('✅ Producto eliminado correctamente', 'success');
+    loadProducts();
+  }
+}
+
+async function addProduct() {
+  const name = document.getElementById('pName').value;
+  const desc = document.getElementById('pDesc').value;
+  const price = parseInt(document.getElementById('pPrice').value);
+  const logo = document.getElementById('pLogo').value;
+  
+  if (!name || !price) {
+    showMessage('❌ El nombre y precio son obligatorios', 'error');
+    return;
+  }
+  
+  const { error } = await supabaseClient.from("productos").insert([{
+    name,
+    description: desc,
+    price,
+    logo,
+    activate: true
+  }]);
+  
+  if (error) {
+    showMessage('❌ Error al agregar el producto', 'error');
+  } else {
+    showMessage('✅ Producto agregado correctamente', 'success');
+    document.getElementById('pName').value = '';
+    document.getElementById('pDesc').value = '';
+    document.getElementById('pPrice').value = '';
+    document.getElementById('pLogo').value = '';
+    loadProducts();
+  }
+}
+
+/* ===== INIT ===== */
+checkAuth();
+</script>
+
+</body>
+</html>

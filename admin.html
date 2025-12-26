@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Admin - HomeFlix</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<h2>Panel de Administración</h2>
+
+<div class="admin-form">
+  <input id="pName" placeholder="Nombre">
+  <input id="pDesc" placeholder="Descripción">
+  <input id="pPrice" type="number" placeholder="Precio">
+  <input id="pLogo" placeholder="Logo">
+  <button onclick="addProduct()">Agregar</button>
+</div>
+
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>Producto</th>
+      <th>Precio</th>
+      <th>Activo</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody id="adminTable"></tbody>
+</table>
+
+<script src="js/supabase.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

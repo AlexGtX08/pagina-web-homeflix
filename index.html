@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>HomeFlix - Streaming Premium</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+::selection { background: transparent; }
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #121828, #05070f);
+  color: #fff;
+}
+
+/* ===== HEADER ===== */
+header {
+  padding: 15px 30px;
+  background: #121828;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,.3);
+}
+
+header h1 { 
+  color: #e50914; 
+  margin: 0;
+  font-size: 32px;
+  text-shadow: 0 0 10px rgba(229,9,20,.5);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-primary {
+  background: #e50914;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: .3s;
+}
+
+.btn-primary:hover {
+  background: #b20710;
+  transform: translateY(-2px);
+}
+
+/* ===== TMDB ===== */
+#tmdbBanner { 
+  height: 500px; 
+  overflow: hidden; 
+  position: relative; 
+}
+
+#tmdbCarousel { 
+  display: flex; 
+  height: 100%; 
+  transition: transform .7s ease; 
+}
+
+.tmdb-slide {
+  min-width: 100%;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.tmdb-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(5,7,15,.95), rgba(5,7,15,.3));
+}
+
+.tmdb-content {
+  position: absolute;
+  bottom: 80px;
+  left: 50px;
+  max-width: 550px;
+}
+
+.tmdb-content h2 {
+  font-size: 42px;
+  margin: 0 0 15px 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,.8);
+}
+
+.tmdb-content p {
+  font-size: 16px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,.8);
+}
+
+.trailer-btn {
+  background: #fff;
+  color: #000;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 15px;
+  transition: .3s;
+  font-size: 16px;
+}
+
+.trailer-btn:hover {
+  background: #e50914;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* ===== MAIN ===== */
+main {
+  max-width: 1200px;
+  margin: auto;
+  padding: 60px 20px;
+}
+
+h2 { 
+  text-align: center; 
+  margin-bottom: 50px;
+  font-size: 36px;
+  color: #e50914;
+}
+
+/* ===== PRODUCTS ===== */
+#productsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+  gap: 30px;
+}
+
+.product-card {
+  background: linear-gradient(145deg, #1b2236, #121828);
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  transition: .3s;
+  border: 2px solid transparent;
+}
+
+.product-card:hover { 
+  transform: translateY(-10px);
+  border-color: #e50914;
+  box-shadow: 0 10px 30px rgba(229,9,20,.3);
+}
+
+.logo-box {
+  width: 160px;
+  height: 90px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f1419;
+  border-radius: 12px;
+}
+
+.logo-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.product-card h3 {
+  margin: 15px 0;
+  font-size: 22px;
+}
+
+.product-card p {
+  color: #aaa;
+  font-size: 14px;
+  min-height: 40px;
+}
+
+.price { 
+  font-size: 24px; 
+  font-weight: bold; 
+  margin: 15px 0;
+  color: #22c55e;
+}
+
+.add-btn {
+  background: #22c55e;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+  color: #fff;
+  font-weight: bold;
+  transition: .3s;
+  font-size: 16px;
+}
+
+.add-btn:hover {
+  background: #16a34a;
+  transform: scale(1.02);
+}
+
+/* ===== CART ===== */
+#cart {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  width: 380px;
+  background: #121828;
+  padding: 20px;
+  border-radius: 14px;
+  display: none;
+  box-shadow: 0 10px 40px rgba(0,0,0,.5);
+  max-height: 500px;
+  overflow-y: auto;
+  border: 2px solid #e50914;
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e50914;
+}
+
+.cart-header h3 {
+  margin: 0;
+  color: #e50914;
+}
+
+.clear-cart-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #1b2236;
+  border-radius: 8px;
+}
+
+.cart-item-info {
+  flex: 1;
+}
+
+.cart-item-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+
+.cart-item-price {
+  color: #22c55e;
+  font-size: 14px;
+}
+
+.cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cart-qty-btn {
+  background: #e50914;
+  color: #fff;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.cart-qty-btn:hover {
+  background: #b20710;
+}
+
+.cart-qty {
+  min-width: 35px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.cart-remove-btn {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.cart-total {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 2px solid #2a2f45;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  color: #22c55e;
+}
+
+.cart-btn {
+  background: #25D366;
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: bold;
+  margin-top: 15px;
+  font-size: 16px;
+  transition: .3s;
+}
+
+.cart-btn:hover {
+  background: #1da851;
+  transform: scale(1.02);
+}
+
+#cartToggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 65px;
+  height: 65px;
+  background: #e50914;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(229,9,20,.4);
+  transition: .3s;
+  z-index: 999;
+}
+
+#cartToggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(229,9,20,.6);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #22c55e;
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+/* ===== WHATSAPP BUTTON ===== */
+#whatsappBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 65px;
+  height: 65px;
+  background: #25D366;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(37,211,102,.4);
+  transition: .3s;
+  z-index: 999;
+}
+
+#whatsappBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(37,211,102,.6);
+}
+
+/* ===== MODAL VIDEO ===== */
+#videoModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.95);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+#videoModal.active {
+  display: flex;
+}
+
+.video-container {
+  position: relative;
+  width: 90%;
+  max-width: 1000px;
+  aspect-ratio: 16/9;
+}
+
+.video-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 12px;
+}
+
+.close-video {
+  position: absolute;
+  top: -50px;
+  right: 0;
+  background: #e50914;
+  color: #fff;
+  border: none;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close-video:hover {
+  background: #b20710;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  header h1 { font-size: 24px; }
+  
+  .tmdb-content {
+    left: 20px;
+    right: 20px;
+    bottom: 40px;
+    max-width: none;
+  }
+  
+  .tmdb-content h2 { font-size: 28px; }
+  .tmdb-content p { font-size: 14px; }
+  
+  #cart {
+    width: 90%;
+    right: 5%;
+  }
+  
+  #whatsappBtn, #cartToggle {
+    width: 55px;
+    height: 55px;
+    font-size: 24px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🎬 HomeFlix</h1>
+  <div class="header-right">
+    <button class="btn-primary" onclick="scrollToProducts()">Ver Productos</button>
+  </div>
+</header>
+
+<section id="tmdbBanner">
+  <div id="tmdbCarousel"></div>
+</section>
+
+<main>
+  <h2 id="productsTitle">⭐ Catálogo de Productos Premium</h2>
+  <div id="productsGrid"></div>
+</main>
+
+<div id="cart"></div>
+<div id="cartToggle">
+  🛒
+  <span class="cart-badge" id="cartBadge" style="display:none;">0</span>
+</div>
+
+<div id="whatsappBtn" onclick="openWhatsApp()">💬</div>
+
+<div id="videoModal" onclick="closeVideo(event)">
+  <div class="video-container">
+    <button class="close-video" onclick="closeVideo(event)">×</button>
+    <iframe id="videoFrame" allowfullscreen></iframe>
+  </div>
+</div>
+
+<script>
+/* ===== SUPABASE ===== */
+const supabaseClient = supabase.createClient(
+  "https://ysynzhjhyklnlxrvrlqi.supabase.co",
+  "sb_publishable_d35p-YdLArGM_jbrgUIesw_yUplQJpd"
+);
+
+let products = [];
+let cart = [];
+
+/* ===== PRODUCTS ===== */
+async function loadProducts() {
+  const { data } = await supabaseClient.from("productos").select("*");
+  products = (data || []).filter(p => p.activate);
+  renderProducts();
+}
+
+function renderProducts() {
+  const grid = document.getElementById("productsGrid");
+  grid.innerHTML = "";
+  
+  if (products.length === 0) {
+    grid.innerHTML = '<p style="text-align:center;color:#888;grid-column:1/-1;">No hay productos disponibles</p>';
+    return;
+  }
+  
+  products.forEach(p => {
+    const logo = p.logo?.startsWith("http") ? p.logo : `./${p.logo}`;
+    grid.innerHTML += `
+      <div class="product-card">
+        <div class="logo-box">
+          <img src="${logo}" onerror="this.src='./Logo.jpeg'" alt="${p.name}">
+        </div>
+        <h3>${p.name}</h3>
+        <p>${p.description || ""}</p>
+        <div class="price">$${p.price.toLocaleString("es-CO")} COP</div>
+        <button class="add-btn" onclick="addToCart('${p.name}', ${p.price})">🛒 Agregar al Carrito</button>
+      </div>
+    `;
+  });
+}
+
+/* ===== CART ===== */
+function addToCart(name, price) {
+  const existing = cart.find(item => item.name === name);
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({ name, price, qty: 1 });
+  }
+  renderCart();
+  updateCartBadge();
+  
+  // Mostrar carrito automáticamente
+  document.getElementById("cart").style.display = "block";
+}
+
+function increaseQty(name) {
+  const item = cart.find(i => i.name === name);
+  if (item) {
+    item.qty++;
+    renderCart();
+    updateCartBadge();
+  }
+}
+
+function decreaseQty(name) {
+  const item = cart.find(i => i.name === name);
+  if (item && item.qty > 1) {
+    item.qty--;
+    renderCart();
+    updateCartBadge();
+  }
+}
+
+function removeFromCart(name) {
+  cart = cart.filter(i => i.name !== name);
+  renderCart();
+  updateCartBadge();
+}
+
+function clearCart() {
+  if (confirm("¿Estás seguro de vaciar todo el carrito?")) {
+    cart = [];
+    renderCart();
+    updateCartBadge();
+  }
+}
+
+function updateCartBadge() {
+  const badge = document.getElementById("cartBadge");
+  const total = cart.reduce((sum, item) => sum + item.qty, 0);
+  if (total > 0) {
+    badge.textContent = total;
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+function renderCart() {
+  const cartBox = document.getElementById("cart");
+  
+  if (cart.length === 0) {
+    cartBox.innerHTML = `
+      <div class="cart-header">
+        <h3>🛒 Carrito Vacío</h3>
+      </div>
+      <p style="text-align:center; color:#888; padding:20px 0;">Agrega productos al carrito para comenzar</p>
+    `;
+    return;
+  }
+
+  let total = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+  
+  cartBox.innerHTML = `
+    <div class="cart-header">
+      <h3>🛒 Mi Carrito (${cart.length})</h3>
+      <button class="clear-cart-btn" onclick="clearCart()">Vaciar</button>
+    </div>
+  `;
+  
+  cart.forEach(item => {
+    cartBox.innerHTML += `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">$${(item.price * item.qty).toLocaleString("es-CO")} COP</div>
+        </div>
+        <div class="cart-item-controls">
+          <button class="cart-qty-btn" onclick="decreaseQty('${item.name}')">-</button>
+          <span class="cart-qty">${item.qty}</span>
+          <button class="cart-qty-btn" onclick="increaseQty('${item.name}')">+</button>
+          <button class="cart-remove-btn" onclick="removeFromCart('${item.name}')">🗑</button>
+        </div>
+      </div>
+    `;
+  });
+  
+  cartBox.innerHTML += `
+    <div class="cart-total">💰 Total: $${total.toLocaleString("es-CO")} COP</div>
+    <button class="cart-btn" onclick="sendWhatsApp(${total})">💬 Enviar Pedido por WhatsApp</button>
+  `;
+}
+
+function sendWhatsApp(total) {
+  let msg = "🎬 *Nuevo Pedido - HomeFlix*\n\n";
+  cart.forEach(item => {
+    msg += `• *${item.name}* x${item.qty} - $${(item.price * item.qty).toLocaleString("es-CO")} COP\n`;
+  });
+  msg += `\n💰 *TOTAL: $${total.toLocaleString("es-CO")} COP*\n\n`;
+  msg += "¡Gracias por tu compra! 🎉";
+  window.open("https://wa.me/573227282610?text=" + encodeURIComponent(msg));
+}
+
+function openWhatsApp() {
+  const msg = "Hola 👋, me gustaría obtener más información sobre los servicios de HomeFlix 🎬";
+  window.open("https://wa.me/573227282610?text=" + encodeURIComponent(msg));
+}
+
+/* ===== TMDB ===== */
+const TMDB_KEY = "daf16911a928bb7d52462802d0dc9281";
+const IMG = "https://image.tmdb.org/t/p/original";
+let idx = 0;
+let movies = [];
+
+async function loadTMDB() {
+  try {
+    const r = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_KEY}&language=es-ES`);
+    
+    if (!r.ok) {
+      throw new Error(`HTTP error! status: ${r.status}`);
+    }
+    
+    const data = await r.json();
+    
+    if (data.results && data.results.length > 0) {
+      movies = data.results.slice(0, 6);
+      await renderTMDB();
+    } else {
+      showFallbackBanner();
+    }
+  } catch (error) {
+    console.error("Error loading TMDB:", error);
+    showFallbackBanner();
+  }
+}
+
+function showFallbackBanner() {
+  // Banner de respaldo si falla TMDB
+  const carousel = document.getElementById("tmdbCarousel");
+  carousel.innerHTML = `
+    <div class="tmdb-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <div class="tmdb-overlay"></div>
+      <div class="tmdb-content">
+        <h2>🎬 Bienvenido a HomeFlix</h2>
+        <p>Tu plataforma premium de streaming. Descubre nuestros mejores planes y disfruta de contenido ilimitado.</p>
+        <button class="trailer-btn" onclick="scrollToProducts()">Ver Productos</button>
+      </div>
+    </div>
+  `;
+}
+
+async function getTrailerKey(movieId) {
+  try {
+    const r = await fetch(`https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${TMDB_KEY}&language=es-ES`);
+    
+    if (!r.ok) return null;
+    
+    const data = await r.json();
+    
+    if (!data.results || data.results.length === 0) return null;
+    
+    const trailer = data.results.find(v => v.type === "Trailer" && v.site === "YouTube");
+    return trailer ? trailer.key : null;
+  } catch (error) {
+    console.error("Error loading trailer:", error);
+    return null;
+  }
+}
+
+async function renderTMDB() {
+  const carousel = document.getElementById("tmdbCarousel");
+  carousel.innerHTML = "";
+  
+  if (!movies || movies.length === 0) {
+    showFallbackBanner();
+    return;
+  }
+  
+  for (const m of movies) {
+    const trailerKey = await getTrailerKey(m.id);
+    const backdropUrl = m.backdrop_path ? `${IMG}${m.backdrop_path}` : '';
+    
+    carousel.innerHTML += `
+      <div class="tmdb-slide" style="background-image:url(${backdropUrl}); background-color: #1a1a2e;">
+        <div class="tmdb-overlay"></div>
+        <div class="tmdb-content">
+          <h2>${m.title || 'Película destacada'}</h2>
+          <p>${m.overview || 'Disfruta del mejor contenido en streaming'}</p>
+          ${trailerKey ? `<button class="trailer-btn" onclick="playTrailer('${trailerKey}')">▶ Ver Tráiler</button>` : ''}
+        </div>
+      </div>
+    `;
+  }
+  
+  // Auto-rotate slides
+  if (movies.length > 1) {
+    setInterval(() => {
+      idx = (idx + 1) % movies.length;
+      carousel.style.transform = `translateX(-${idx * 100}%)`;
+    }, 6000);
+  }
+}
+
+function playTrailer(videoKey) {
+  const modal = document.getElementById("videoModal");
+  const frame = document.getElementById("videoFrame");
+  frame.src = `https://www.youtube.com/embed/${videoKey}?autoplay=1`;
+  modal.classList.add("active");
+}
+
+function closeVideo(event) {
+  if (event.target.id === "videoModal" || event.target.classList.contains("close-video")) {
+    const modal = document.getElementById("videoModal");
+    const frame = document.getElementById("videoFrame");
+    frame.src = "";
+    modal.classList.remove("active");
+  }
+}
+
+/* ===== UI ===== */
+document.getElementById("cartToggle").onclick = () => {
+  const cartBox = document.getElementById("cart");
+  const isVisible = cartBox.style.display === "block";
+  cartBox.style.display = isVisible ? "none" : "block";
+};
+
+function scrollToProducts() {
+  document.getElementById("productsTitle").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ===== INIT ===== */
+loadProducts();
+loadTMDB();
+</script>
+
+</body>
+</html>
