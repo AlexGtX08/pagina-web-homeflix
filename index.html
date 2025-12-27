@@ -683,33 +683,119 @@ function openWhatsApp() {
   window.open("https://wa.me/573227282610?text=" + encodeURIComponent(msg));
 }
 
-/* ===== TMDB ===== */
+/* ===== TMDB AVANZADO ===== */
+
 const TMDB_KEY = "daf16911a928bb7d52462802d0dc9281";
 const IMG = "https://image.tmdb.org/t/p/original";
-let idx = 0;
+
+const TMDB_CATEGORIES = [
+  { name: "Tendencias", endpoint: "trending/movie/week" },
+  { name: "Populares", endpoint: "movie/popular" },
+  { name: "Mejor valoradas", endpoint: "movie/top_rated" },
+  { name: "En cartelera", endpoint: "movie/now_playing" },
+  { name: "Próximos estrenos", endpoint: "movie/upcoming" }
+];
+
 let movies = [];
+let idx = 0;
+let tmdbTimer = null;
+
+function shuffleArray(arr) {
+  return [...arr].sort(() => Math.random() - 0.5);
+}
+
+function getNextCategoryIndex() {
+  let i = parseInt(localStorage.getItem("tmdbCategoryIndex")) || 0;
+  localStorage.setItem("tmdbCategoryIndex", (i + 1) % TMDB_CATEGORIES.length);
+  return i;
+}
 
 async function loadTMDB() {
   try {
-    const r = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_KEY}&language=es-ES`);
-    
-    if (!r.ok) {
-      throw new Error(`HTTP error! status: ${r.status}`);
-    }
-    
-    const data = await r.json();
-    
-    if (data.results && data.results.length > 0) {
-      movies = data.results.slice(0, 6);
-      await renderTMDB();
-    } else {
-      showFallbackBanner();
-    }
-  } catch (error) {
-    console.error("Error loading TMDB:", error);
+    const catIndex = getNextCategoryIndex();
+    const cat = TMDB_CATEGORIES[catIndex];
+
+    const res = await fetch(
+      `https://api.themoviedb.org/3/${cat.endpoint}?api_key=${TMDB_KEY}&language=es-ES`
+    );
+
+    if (!res.ok) throw new Error("TMDB error");
+
+    const data = await res.json();
+    movies = shuffleArray(data.results || []).slice(0, 6);
+
+    await renderTMDB();
+
+    clearTimeout(tmdbTimer);
+    tmdbTimer = setTimeout(loadTMDB, 300000); // 5 minutos
+  } catch (e) {
+    console.error(e);
     showFallbackBanner();
   }
 }
+
+async function renderTMDB() {
+  const carousel = document.getElementById("tmdbCarousel");
+  carousel.innerHTML = "";
+  idx = 0;
+
+  if (!movies.length) {
+    showFallbackBanner();
+    return;
+  }
+
+  for (const m of movies) {
+    const trailerKey = await getTrailerKey(m.id);
+    const bg = m.backdrop_path ? IMG + m.backdrop_path : "";
+
+    carousel.innerHTML += `
+      <div class="tmdb-slide" style="background-image:url('${bg}')">
+        <div class="tmdb-overlay"></div>
+        <div class="tmdb-content">
+          <h2>${m.title}</h2>
+          <p>${m.overview || ""}</p>
+          ${
+            trailerKey
+              ? `<button class="trailer-btn" onclick="playTrailer('${trailerKey}')">▶ Ver Tráiler</button>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  setInterval(() => {
+    idx = (idx + 1) % movies.length;
+    carousel.style.transform = `translateX(-${idx * 100}%)`;
+  }, 6000);
+}
+
+async function getTrailerKey(id) {
+  try {
+    const r = await fetch(
+      `https://api.themoviedb.org/3/movie/${id}/videos?api_key=${TMDB_KEY}&language=es-ES`
+    );
+    const d = await r.json();
+    const t = d.results.find(v => v.type === "Trailer" && v.site === "YouTube");
+    return t ? t.key : null;
+  } catch {
+    return null;
+  }
+}
+
+function showFallbackBanner() {
+  document.getElementById("tmdbCarousel").innerHTML = `
+    <div class="tmdb-slide" style="background:#1a1a2e">
+      <div class="tmdb-overlay"></div>
+      <div class="tmdb-content">
+        <h2>🎬 HomeFlix</h2>
+        <p>Streaming premium sin límites</p>
+        <button class="trailer-btn" onclick="scrollToProducts()">Ver Productos</button>
+      </div>
+    </div>
+  `;
+}
+
 
 function showFallbackBanner() {
   // Banner de respaldo si falla TMDB
